@@ -1,0 +1,302 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+          /*  max-width: 600px; */
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+      /*  .todo-list {
+            margin-top: 20px;
+            padding: 0;
+            list-style-type: none;
+        }
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+        */
+        .todo-checkbox {
+            margin-right: 15px;
+        }
+        .todo-text {
+            flex: 1;
+            margin-right: 20px;
+            overflow-wrap: break-word;
+        }
+        .action-column {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .header-row {
+            font-weight: bold;
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+        }
+        .edit-popup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 400px; /* Increased width */
+            max-width: 80%; /* Maximum width */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Todo List</h1>
+        <div class="input-group mb-3">
+            <input type="text" id="todoInput" class="form-control" placeholder="Enter new todo">
+            <div class="input-group-append">
+                <button id="addTodoBtn" class="btn btn-primary">Add Todo</button>
+            </div>
+        </div>
+        <!-- Todo items will be added dynamically here -->
+<table id="todoTable" class="todo-list display">
+    <thead>
+        <tr>
+            <th>S.No</th>
+            <th><input type="checkbox" id="selectAllCheckbox"></th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Todo items will be added dynamically here -->
+        <c:forEach items="${todos}" var="todo" varStatus="loop">
+            <tr class="todo-item" data-todo-id="${todo.id}">
+                <td>${loop.index + 1}</td>
+                <td><input type="checkbox" class="todo-checkbox"></td>
+                <td>${todo.title}</td>
+                <td>${todo.completed ? 'Completed' : 'Pending'}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary edit-todo">Edit</button>
+                    <button class="btn btn-sm btn-danger delete-todo">Delete</button>
+                </td>
+            </tr>
+        </c:forEach>
+    </tbody>
+</table>
+
+    </div>
+
+        <!-- Edit popup -->
+        <div id="editPopup" class="edit-popup">
+            <h3>Edit Todo</h3>
+            <input type="text" id="editedTodo" class="form-control mb-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="completedCheckbox">
+                <label class="form-check-label" for="completedCheckbox">
+                    Mark as Complete
+                </label>
+            </div>
+            <button id="saveEditedTodo" class="btn btn-primary mr-2">Save</button>
+            <button id="cancelEditedTodo" class="btn btn-secondary">Cancel</button>
+        </div>
+
+<button id="deleteSelectedBtn" class="btn btn-danger">Delete Selected Task</button>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+    <script>
+        function getContextPath() {
+            var contextPath = window.location.pathname.substring(0, window.location.pathname.indexOf("/",2));
+            return contextPath;
+        }
+
+        $(document).ready(function() {
+            $('#todoTable').DataTable();
+
+            $('#addTodoBtn').click(function() {
+                var todoText = $('#todoInput').val().trim();
+                if(todoText !== '') {
+                    $.ajax({
+                        type: 'POST',
+                        url: getContextPath()+'/addTodo',
+                        data: {
+                            title: todoText
+                        },
+                        success: function(data) {
+                            $('#todoTable').DataTable().row.add([
+                                parseInt($('.sorting_1').last().text(),10)+1,
+                                '<td><input type="checkbox" class="todo-checkbox"></td>',
+                                data.title,
+                                data.completed ? 'Completed' : 'Pending',
+                                '<button class="btn btn-sm btn-primary edit-todo">Edit</button>' +
+                                '<button class="btn btn-sm btn-danger delete-todo">Delete</button>'
+                            ]).draw();
+                            $('#todoInput').val('');
+                        }
+                    });
+                }
+            });
+
+            $(document).on('click', '.todo-checkbox', function() {
+                var todoText = $(this).closest('tr').find('.todo-text');
+                if($(this).is(':checked')) {
+                    todoText.addClass('completed');
+                } else {
+                    todoText.removeClass('completed');
+                }
+            });
+
+            $(document).on('click', '.edit-todo', function() {
+                    var todoRow = $(this).closest('tr');
+                    var todoId = todoRow.data('todo-id'); // Retrieve the todo ID from the data attribute
+                    var todoText = todoRow.find('td:nth-child(3)').text(); // Get text from the third column
+                    var isCompleted = todoRow.find('td:nth-child(4)').text() === 'Completed'; // Check if text in the fourth column is 'Completed'
+
+                    // Populate the edit popup with existing content
+                    $('#editedTodo').val(todoText);
+                    $('#completedCheckbox').prop('checked', isCompleted);
+
+                    // Set the todo-id data attribute on the edit popup
+                    $('#editPopup').data('todo-id', todoId);
+
+                    // Show the edit popup
+                    $('#editPopup').show();
+             });
+
+
+            $('#cancelEditedTodo').click(function() {
+                $('#editPopup').hide();
+            });
+
+            $('#saveEditedTodo').click(function() {
+                var editedTodoText = $('#editedTodo').val().trim();
+                var isCompleted = $('#completedCheckbox').is(':checked');
+                var todoId = $('#editPopup').data('todo-id'); // Get the todo ID from the edit popup data attribute
+                if (editedTodoText !== '' && todoId) { // Ensure todoId exists
+                    $.ajax({
+                        type: 'POST',
+                        url: getContextPath() + '/editTodo',
+                        data: {
+                            id: todoId, // Include the todo ID in the data object
+                            title: editedTodoText,
+                            completed: isCompleted
+                        },
+                        success: function(data) {
+                            console.log('Todo edited successfully');
+                            $('#editPopup').hide();
+                            // Update the UI with the new data
+                            var todoRow = $('#todoTable').find('tr[data-todo-id="' + todoId + '"]');
+                            todoRow.find('td:nth-child(3)').text(editedTodoText);
+                            todoRow.find('td:nth-child(4)').text(isCompleted ? 'Completed' : 'Pending');
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error editing todo:', error);
+                        }
+                    });
+                }
+            });
+
+
+
+            $(document).on('click', '.delete-todo', function() {
+                debugger;
+                var todoItem = $(this).closest('tr');
+                var todoTitle = todoItem.find('td:first').text();
+                var isConfirmed = confirm('Are you sure you want to delete the todo: ' + todoTitle + '?');
+                if (isConfirmed) {
+                    var todoId = todoItem.data('todo-id');
+                    $.ajax({
+                        type: 'POST',
+                        url: getContextPath()+'/deleteTodo',
+                        data: {
+                            todoId: todoId
+                        },
+                        success: function(data) {
+                            $('#todoTable').DataTable().row(todoItem).remove().draw();
+                            console.log('Todo deleted successfully');
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error deleting todo:', error);
+                        }
+                    });
+                }
+            });
+
+
+            // Select All Checkbox functionality
+                $('#selectAllCheckbox').change(function() {
+                    $('.todo-checkbox').prop('checked', this.checked);
+                });
+
+                // Individual Checkbox functionality
+                $(document).on('change', '.todo-checkbox', function() {
+                    if (!this.checked) {
+                        $('#selectAllCheckbox').prop('checked', false);
+                    }
+                });
+
+
+                 // Delete Selected Items
+                    $('#deleteSelectedBtn').click(function() {
+                       debugger;
+                        var selectedIds = [];
+                        $('.todo-checkbox:checked').each(function() {
+                            selectedIds.push($(this).closest('tr').data('todo-id'));
+                        });
+
+                        if (selectedIds.length === 0) {
+                            alert('Please select at least one item to delete.');
+                        } else {
+                            var isConfirmed = confirm('Are you sure you want to delete selected items?');
+                        //   var url = getContextPath() + '/deleteTodos?todoIds=' + JSON.stringify(selectedIds);
+                            if (isConfirmed) {
+                                    $.ajax({
+                                        type: 'POST',
+                                       url: getContextPath() + '/deleteTodos',
+                                     //   url: getContextPath() + '/deleteTodos?todoIds=' + JSON.stringify(selectedIds),
+                                        contentType: 'application/json', // Set content type to JSON
+                                     //   data: JSON.stringify({ todoIds: selectedIds }), // Convert data to JSON string
+                                        // data: JSON.stringify(selectedIds), // Convert data to JSON string
+                                            data: JSON.stringify({ todoIds: selectedIds }), // Send todoIds in the request body
+                                        success: function(data) {
+                                            selectedIds.forEach(function(id) {
+                                                $('#todoTable').DataTable().row($('tr[data-todo-id="' + id + '"]')).remove().draw();
+                                            });
+                                            console.log('Selected items deleted successfully');
+                                        },
+                                        error: function(xhr, status, error) {
+                                        //    console.error('Error deleting selected items:', error);
+                                        }
+                                    });
+                            }
+                        }
+                    });
+
+        });
+    </script>
+</body>
+</html>
