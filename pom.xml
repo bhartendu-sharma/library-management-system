@@ -11,11 +11,11 @@
 	</parent>
 
 	<groupId>com.apps</groupId>
-	<artifactId>todoApp</artifactId>
+	<artifactId>libraryManagementApp</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>war</packaging>
-	<name>todoApp</name>
-	<description>todoApp Application</description>
+	<name>libraryManagementApp</name>
+	<description>libraryManagement Application</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
@@ -94,6 +94,33 @@
 		<!--			<version>3.0.0</version>-->
 		<!--		</dependency>-->
 		<!-- https://mvnrepository.com/artifact/javax.servlet.jsp.jstl/jstl-api -->
+
+
+
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-core</artifactId>
+			<version>${spring-security.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.26</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/javax.validation/validation-api -->
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+			<version>2.0.1.Final</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.mapstruct/mapstruct -->
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>1.5.5.Final</version>
+		</dependency>
 
 	</dependencies>
 
